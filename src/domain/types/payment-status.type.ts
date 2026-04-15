@@ -1,0 +1,1 @@
+export type PaymentStatus = "INITIAL" | "IN_PROGRESS" | "FAILED" | "FINISH";
