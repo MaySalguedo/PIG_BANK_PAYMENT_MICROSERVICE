@@ -114,6 +114,38 @@ npm run deploy
 
 </li>
 
+<li>
+
+<strong>Load the catalog</strong>
+
+<ul>
+
+<li>
+
+<strong>Get your AWS Account id</strong>
+
+```bash
+aws sts get-caller-identity --query Account --output text
+```
+
+</li>
+
+<li>
+
+<strong>Load csv</strong>
+
+With your id account (must be a number) ejecute the following command
+
+```bash
+aws s3 cp catalog.csv s3://pig-bank-catalog-uploads-YOUR_ID_ACCOUNT/
+```
+
+</li>
+
+</ul>
+
+</li>
+
 </ol>
 
 ## 🛠️ Tech Stack

@@ -11,7 +11,7 @@ locals {
 # 1. Lambda para iniciar el pago (API Gateway)
 resource "aws_lambda_function" "start_payment" {
   function_name    = "start-payment-lambda"
-  runtime          = "nodejs24.x"
+  runtime          = "nodejs22.x"
   handler          = "dist/start-payment-lambda.handler"
   role             = aws_iam_role.payment_lambda_role.arn
   filename         = var.lambda_zip_path
@@ -25,7 +25,7 @@ resource "aws_lambda_function" "start_payment" {
 # 2. Lambda para procesar la transacción (Trigger SQS)
 resource "aws_lambda_function" "transaction_process" {
   function_name    = "transaction-lambda"
-  runtime          = "nodejs24.x"
+  runtime          = "nodejs22.x"
   handler          = "dist/transaction-lambda.handler"
   role             = aws_iam_role.payment_lambda_role.arn
   filename         = var.lambda_zip_path
@@ -39,11 +39,17 @@ resource "aws_lambda_function" "transaction_process" {
 # 3. Lambda para sincronizar el catálogo (Trigger S3)
 resource "aws_lambda_function" "sync_catalog" {
   function_name    = "sync-catalog-lambda"
-  runtime          = "nodejs24.x"
+  runtime          = "nodejs22.x"
   handler          = "dist/sync-catalog-lambda.handler"
   role             = aws_iam_role.payment_lambda_role.arn
   filename         = var.lambda_zip_path
   source_code_hash = filebase64sha256(var.lambda_zip_path)
+  timeout = 60
+  memory_size = 256
+  vpc_config {
+    subnet_ids         = data.aws_subnets.default.ids
+    security_group_ids = [aws_security_group.lambda_sg.id]
+  }
 
   environment {
     variables = local.payment_env
@@ -53,11 +59,16 @@ resource "aws_lambda_function" "sync_catalog" {
 # 4. Lambda para obtener el catálogo (API Gateway)
 resource "aws_lambda_function" "get_catalog" {
   function_name    = "get-catalog-lambda"
-  runtime          = "nodejs24.x"
+  runtime          = "nodejs22.x"
   handler          = "dist/get-catalog-lambda.handler"
   role             = aws_iam_role.payment_lambda_role.arn
   filename         = var.lambda_zip_path
   source_code_hash = filebase64sha256(var.lambda_zip_path)
+  timeout = 20
+  vpc_config {
+    subnet_ids         = data.aws_subnets.default.ids
+    security_group_ids = [aws_security_group.lambda_sg.id]
+  }
 
   environment {
     variables = local.payment_env

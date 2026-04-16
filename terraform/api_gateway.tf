@@ -55,11 +55,36 @@ resource "aws_api_gateway_integration" "int_sync_catalog" {
   uri                     = aws_lambda_function.sync_catalog.invoke_arn
 }
 
+resource "aws_api_gateway_method" "get_catalog" {
+  rest_api_id   = aws_api_gateway_rest_api.payment_api.id
+  resource_id   = aws_api_gateway_resource.catalog.id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "int_get_catalog" {
+  rest_api_id             = aws_api_gateway_rest_api.payment_api.id
+  resource_id             = aws_api_gateway_resource.catalog.id
+  http_method             = aws_api_gateway_method.get_catalog.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.get_catalog.invoke_arn
+}
+
+resource "aws_lambda_permission" "apigw_get_catalog" {
+  statement_id  = "AllowExecutionFromAPIGatewayGetCatalog"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.get_catalog.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.payment_api.execution_arn}/*/*"
+}
+
 # --- Despliegue y Stage ---
 resource "aws_api_gateway_deployment" "payment_deployment" {
   depends_on = [
     aws_api_gateway_integration.int_start_payment,
-    aws_api_gateway_integration.int_sync_catalog
+    aws_api_gateway_integration.int_sync_catalog,
+	aws_api_gateway_integration.int_get_catalog
   ]
 
   rest_api_id = aws_api_gateway_rest_api.payment_api.id
@@ -67,9 +92,11 @@ resource "aws_api_gateway_deployment" "payment_deployment" {
   triggers = {
     redeployment = sha1(jsonencode([
       aws_api_gateway_resource.payments.id,
+	  aws_api_gateway_resource.catalog.id,
       aws_api_gateway_resource.catalog_sync.id,
       aws_api_gateway_method.post_payment.id,
-      aws_api_gateway_method.post_sync.id
+      aws_api_gateway_method.post_sync.id,
+	  aws_api_gateway_method.get_catalog.id
     ]))
   }
 

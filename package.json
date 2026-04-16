@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "description": "PIG BANK – Payment & Catalog microservice (Part 2)",
   "main": "dist/handler.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "clean": "rm -rf dist",
-    "bundle": "esbuild src/infra/handlers/*.ts --bundle --platform=node --target=node24 --format=esm --outdir=dist --external:@aws-sdk/*",
+    "bundle": "esbuild src/infra/handlers/*.ts --bundle --platform=node --target=node22 --format=cjs --outdir=dist --external:@aws-sdk/*",
     "build": "tar -a -c -f lambda.zip dist package.json",
-	"compile": "run-s bundle build",
+	"compile": "run-s clean bundle build",
 	"tf:init": "terraform init",
-	"tf:apply": "terraform apply -auto-approve",
+	"tf:apply": "terraform apply -auto-approve -replace=\"aws_api_gateway_deployment.payment_deployment\"",
 	"deploy:init": "run-s compile tf:init tf:apply",
 	"deploy": "run-s compile tf:apply"
   },

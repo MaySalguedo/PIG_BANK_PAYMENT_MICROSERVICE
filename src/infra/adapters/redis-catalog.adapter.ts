@@ -12,6 +12,7 @@ export class RedisCatalogAdapter {
 
     public async saveCatalog(services: any[]): Promise<void> {
         await this.redis.set('pigbank:catalog', JSON.stringify(services));
+		await redis.quit();
     }
 
     public async getCatalog(): Promise<any[]> {

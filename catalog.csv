@@ -1,0 +1,21 @@
+Velocidad/Detalles,ID,Plan,Precio Mensual,Proveedor,Estado,Servicio,Categoría
+150 kWh incluidos,1,Básico,45,Empresa Eléctrica Nacional,Activo,Luz Residencial,Energía
+300 kWh incluidos,2,Premium,75,Empresa Eléctrica Nacional,Activo,Luz Residencial,Energía
+20 m³ incluidos,3,Estándar,25,Acueducto Municipal,Activo,Agua Potable,Agua
+100 Mbps,4,Básico,89.9,Tigo,Activo,Internet Hogar,Internet
+200 Mbps,5,Avanzado,129.9,Tigo,Activo,Internet Hogar,Internet
+120 Mbps,6,Essential,79.9,Movistar,Activo,Fibra Óptica,Internet
+250 Mbps,7,Plus,119.9,Movistar,Activo,Fibra Óptica,Internet
+100 Mbps,8,Básico,85,Claro,Activo,Internet Hogar,Internet
+300 Mbps,9,Full,135,Claro,Activo,Internet Hogar,Internet
+3 GB + Minutos Ilimitados,10,Control,45,Tigo,Activo,Pospago,Telefonía
+10 GB + Minutos Ilimitados,11,Max,85,Tigo,Activo,Pospago,Telefonía
+2 GB + Minutos Ilimitados,12,Básico,40,Movistar,Activo,Pospago,Telefonía
+15 GB + Minutos Ilimitados,13,Premium,90,Movistar,Activo,Pospago,Telefonía
+1.5 GB + Minutos Ilimitados,14,Económico,35,Claro,Activo,Pospago,Telefonía
+20 GB + Minutos Ilimitados,15,Total,95,Claro,Activo,Pospago,Telefonía
+80 canales,16,Básico,59.9,Tigo,Activo,TV Digital,TV
+150 canales + HD,17,Ultra,99.9,Tigo,Activo,TV Digital,TV
+100 canales,18,Estándar,65,Claro,Activo,TV Cable,TV
+200 canales + HD,19,Premium,110,Claro,Activo,TV Cable,TV
+Internet + TV + Teléfono,20,Hogar,199.9,Tigo,Activo,Triple Play,Paquete
