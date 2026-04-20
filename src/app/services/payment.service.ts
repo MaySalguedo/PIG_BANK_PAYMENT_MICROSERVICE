@@ -36,7 +36,7 @@ export class PaymentService<
 			userId: uuidv4(),
 			cardId,
 			service,
-			status: 'INITIAL',
+			status: 'IN_PROGRESS',
 			timestamp,
 			createdAt: timestamp
 		};
@@ -60,7 +60,7 @@ export class PaymentService<
 			await this.bankPort.processPurchase(
 				payment.cardId,
 				payment.service.provider,
-				payment.service.monthlyPrice
+				payment.service.monthly_price
 			);
 
 			payment.status = 'FINISH';

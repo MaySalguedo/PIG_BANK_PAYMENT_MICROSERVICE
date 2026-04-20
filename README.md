@@ -165,3 +165,219 @@ Create a `terraform.tfvars` on the root directory with the following contend
 # API Configuration
 card_service_api_url = "https://your.card.microservice.url.amazonaws.com/prod"
 ```
+## 📡 API Endpoints
+
+--
+
+## 1. Start a Payment
+ 
+**`POST /payments`**
+ 
+Creates a new payment record with `IN_PROGRESS` status and enqueues the event in SQS for asynchronous processing.
+ 
+### Request Body
+ 
+```json
+{
+  "cardId": "string",
+  "service": {
+    "id": "number",
+    "category": "string",
+    "provider": "string",
+    "service": "string",
+    "plan": "string",
+    "monthly_price": "number",
+    "details": "string",
+    "status": "Active | Inactive"
+  }
+}
+```
+ 
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `cardId` | `string` | ✅ | User's card identifier |
+| `service.id` | `number` | ✅ | Service ID from the catalog |
+| `service.category` | `string` | ✅ | Service category (e.g. `"Internet"`) |
+| `service.provider` | `string` | ✅ | Provider name |
+| `service.service` | `string` | ✅ | Service name |
+| `service.plan` | `string` | ✅ | Contracted plan name |
+| `service.monthly_price` | `number` | ✅ | Monthly price in the configured currency |
+| `service.details` | `string` | ✅ | Additional details (e.g. speed) |
+| `service.status` | `string` | ✅ | Service status: `Active` or `Inactive` |
+ 
+### Response `201 Created`
+ 
+```json
+{
+  "traceId": "generated-uuid"
+}
+```
+ 
+### Response `500 Internal Server Error`
+ 
+```json
+{
+  "message": "error description"
+}
+```
+ 
+---
+ 
+## 2. Get Transaction Status
+ 
+**`GET /payments/{traceId}`**
+ 
+Returns the current status of a transaction by its `traceId`.
+ 
+### Path Parameters
+ 
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `traceId` | `string` | ✅ | UUID of the transaction to look up |
+ 
+### Request Body
+ 
+_Not applicable._
+ 
+### Response `200 OK`
+ 
+```json
+{
+  "uuid": "string",
+  "traceId": "string",
+  "userId": "string",
+  "cardId": "string",
+  "service": { "..." },
+  "status": "IN_PROGRESS | FINISH | FAILED",
+  "timestamp": "string",
+  "createdAt": "string",
+  "error": "string | undefined"
+}
+```
+ 
+### Response `400 Bad Request`
+ 
+```json
+{
+  "message": "traceId required"
+}
+```
+ 
+### Response `404 Not Found`
+ 
+```json
+{
+  "message": "Transaction not found"
+}
+```
+ 
+---
+ 
+## 3. Get Service Catalog
+ 
+**`GET /catalog`**
+ 
+Returns the full list of available services stored in Redis.
+ 
+### Request Body
+ 
+_Not applicable._
+ 
+### Response `200 OK`
+ 
+```json
+[
+  {
+    "id": "number",
+    "category": "string",
+    "provider": "string",
+    "service": "string",
+    "plan": "string",
+    "monthly_price": "number",
+    "details": "string",
+    "status": "Active | Inactive"
+  }
+]
+```
+ 
+### Response `500 Internal Server Error`
+ 
+```json
+{
+  "message": "Internal error",
+  "detail": "error description"
+}
+```
+ 
+---
+ 
+## 4. Sync Catalog (Manual)
+ 
+**`POST /catalog/sync`**
+ 
+> ⚠️ **Warning:** This endpoint directly invokes `sync-catalog-lambda`, whose handler is designed to receive an `S3Event`. Calling it from API Gateway **does not replace** the automatic S3 trigger and may require payload adaptation.
+ 
+The recommended flow to sync the catalog is to upload the `.csv` file directly to the S3 bucket:
+ 
+```bash
+aws s3 cp catalog.csv s3://pig-bank-catalog-uploads-{YOUR_ACCOUNT_ID}/
+```
+ 
+### Request Body (internally expected S3Event)
+ 
+```json
+{
+  "Records": [
+    {
+      "s3": {
+        "bucket": {
+          "name": "pig-bank-catalog-uploads-{ACCOUNT_ID}"
+        },
+        "object": {
+          "key": "catalog.csv"
+        }
+      }
+    }
+  ]
+}
+```
+ 
+### Response `200`
+ 
+_No body. The lambda processes the file and saves the catalog to Redis._
+ 
+---
+ 
+## ⚡ Internal Triggers (No HTTP Endpoint)
+ 
+### `transaction-lambda` — Trigger: SQS
+ 
+Consumes messages published by `start-payment-lambda`. The expected message structure in the queue is:
+ 
+```json
+{
+  "data": {
+    "traceId": "string"
+  }
+}
+```
+ 
+Fetches the payment from DynamoDB, calls the bank API, and updates the status to `FINISH` or `FAILED`.
+ 
+---
+ 
+### `sync-catalog-lambda` — Trigger: S3 Event
+ 
+Fires automatically when a `.csv` is uploaded to the `pig-bank-catalog-uploads-{ACCOUNT_ID}` bucket. Parses the file and saves the catalog to Redis with the following column mapping:
+ 
+| CSV Column | Redis Field |
+|---|---|
+| `ID` | `id` |
+| `Categoría` | `category` |
+| `Proveedor` | `provider` |
+| `Servicio` | `service` |
+| `Plan` | `plan` |
+| `Precio Mensual` | `monthly_price` |
+| `Velocidad/Detalles` | `details` |
+| `Estado` | `status` (`Activo` → `Active`) |
+ 

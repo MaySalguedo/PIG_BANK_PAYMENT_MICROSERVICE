@@ -1,3 +1,7 @@
+# --- DATA SOURCES ---
+data "aws_region" "current" {}
+
+# --- ROLES ---
 resource "aws_iam_role" "payment_lambda_role" {
   name = "pig_bank_payment_lambda_role"
 
@@ -11,33 +15,71 @@ resource "aws_iam_role" "payment_lambda_role" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "payment_lambda_admin" {
+# --- ATTACHMENTS ---
+resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
   role       = aws_iam_role.payment_lambda_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
-# 1. Definir la política para leer el bucket
+# --- POLÍTICA S3 (CATÁLOGO) ---
 resource "aws_iam_policy" "lambda_s3_policy" {
-  name        = "pig_bank_lambda_s3_policy"
-  description = "Permite a la lambda leer el archivo csv del bucket de catalogo"
+  name = "pig_bank_lambda_s3_policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action   = ["s3:GetObject", "s3:ListBucket"]
+      Effect   = "Allow"
+      Resource = [aws_s3_bucket.catalog_uploads.arn, "${aws_s3_bucket.catalog_uploads.arn}/*"]
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "attach_s3_policy" {
+  role       = aws_iam_role.payment_lambda_role.name
+  policy_arn = aws_iam_policy.lambda_s3_policy.arn
+}
+
+# --- POLÍTICA DYNAMODB (PAGOS) ---
+resource "aws_iam_policy" "lambda_dynamodb_policy" {
+  name = "pig_bank_lambda_dynamodb_policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action   = ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:UpdateItem", "dynamodb:Query"]
+      Effect   = "Allow"
+      Resource = "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/payment-table"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "attach_dynamodb_policy" {
+  role       = aws_iam_role.payment_lambda_role.name
+  policy_arn = aws_iam_policy.lambda_dynamodb_policy.arn
+}
+
+# --- POLÍTICA SQS ACTUALIZADA (CONSUMIDOR Y PRODUCTOR) ---
+resource "aws_iam_policy" "lambda_sqs_policy" {
+  name        = "pig_bank_lambda_sqs_policy"
+  description = "Permite a las lambdas producir y consumir mensajes de la cola de pagos"
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Action   = ["s3:GetObject", "s3:ListBucket"]
-        Effect   = "Allow"
-        Resource = [
-          aws_s3_bucket.catalog_uploads.arn,
-          "${aws_s3_bucket.catalog_uploads.arn}/*"
+        Action   = [
+          "sqs:SendMessage",
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes"
         ]
+        Effect   = "Allow"
+        Resource = "arn:aws:sqs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:pig-bank-payment-notifications"
       }
     ]
   })
 }
 
-# 2. Adjuntar la política al rol que ya tienes
-resource "aws_iam_role_policy_attachment" "attach_s3_policy" {
+resource "aws_iam_role_policy_attachment" "attach_sqs_policy" {
   role       = aws_iam_role.payment_lambda_role.name
-  policy_arn = aws_iam_policy.lambda_s3_policy.arn
+  policy_arn = aws_iam_policy.lambda_sqs_policy.arn
 }

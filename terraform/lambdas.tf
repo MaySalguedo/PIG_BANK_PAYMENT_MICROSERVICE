@@ -74,3 +74,26 @@ resource "aws_lambda_function" "get_catalog" {
     variables = local.payment_env
   }
 }
+
+# 5.
+
+resource "aws_lambda_function" "get_transaction_status" {
+  function_name    = "get-transaction-status-lambda"
+  runtime          = "nodejs22.x"
+  handler          = "dist/get-transaction-status-lambda.handler"
+  role             = aws_iam_role.payment_lambda_role.arn
+  filename         = var.lambda_zip_path
+  source_code_hash = filebase64sha256(var.lambda_zip_path)
+
+  environment {
+    variables = local.payment_env
+  }
+}
+
+resource "aws_lambda_permission" "apigw_status" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.get_transaction_status.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.payment_api.execution_arn}/*/*"
+}

@@ -10,9 +10,11 @@ export class BankApiAdapter implements IBankStatement {
 			body: JSON.stringify({ cardId, merchant, amount })
 		});
 
+		//console.log(response);
+
 		if (!response.ok) {
 			const error = await response.json();
-			throw new Error(error.message || "Core Banking transaction failed");
+			throw new Error(error.message || error.error || "Core Banking transaction failed");
 		}
 
 		const data = await response.json();

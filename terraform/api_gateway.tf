@@ -26,6 +26,29 @@ resource "aws_api_gateway_integration" "int_start_payment" {
   uri                     = aws_lambda_function.start_payment.invoke_arn
 }
 
+# /payments/{traceId}
+resource "aws_api_gateway_resource" "payment_status" {
+  rest_api_id = aws_api_gateway_rest_api.payment_api.id
+  parent_id   = aws_api_gateway_resource.payments.id
+  path_part   = "{traceId}"
+}
+
+resource "aws_api_gateway_method" "get_status" {
+  rest_api_id   = aws_api_gateway_rest_api.payment_api.id
+  resource_id   = aws_api_gateway_resource.payment_status.id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "int_get_status" {
+  rest_api_id             = aws_api_gateway_rest_api.payment_api.id
+  resource_id             = aws_api_gateway_resource.payment_status.id
+  http_method             = aws_api_gateway_method.get_status.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.get_transaction_status.invoke_arn
+}
+
 # --- Recurso /catalog/sync ---
 resource "aws_api_gateway_resource" "catalog" {
   rest_api_id = aws_api_gateway_rest_api.payment_api.id
@@ -84,7 +107,8 @@ resource "aws_api_gateway_deployment" "payment_deployment" {
   depends_on = [
     aws_api_gateway_integration.int_start_payment,
     aws_api_gateway_integration.int_sync_catalog,
-	aws_api_gateway_integration.int_get_catalog
+	aws_api_gateway_integration.int_get_catalog,
+	aws_api_gateway_integration.int_get_status
   ]
 
   rest_api_id = aws_api_gateway_rest_api.payment_api.id
@@ -92,11 +116,13 @@ resource "aws_api_gateway_deployment" "payment_deployment" {
   triggers = {
     redeployment = sha1(jsonencode([
       aws_api_gateway_resource.payments.id,
+	  aws_api_gateway_resource.payment_status.id,
 	  aws_api_gateway_resource.catalog.id,
       aws_api_gateway_resource.catalog_sync.id,
       aws_api_gateway_method.post_payment.id,
       aws_api_gateway_method.post_sync.id,
-	  aws_api_gateway_method.get_catalog.id
+	  aws_api_gateway_method.get_catalog.id,
+	  aws_api_gateway_method.get_status.id,
     ]))
   }
 
