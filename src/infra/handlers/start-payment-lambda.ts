@@ -2,6 +2,7 @@ import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { DynamoDbPaymentAdapter } from "@adapters/dynamo-db-payment.adapter";
 import { SqsNotificationAdapter } from "@adapters/sqs-notification.adapter";
 import { PaymentService } from "@services/payment.service";
+import { jsonResponse } from "../http/cors";
 
 const paymentRepository = new DynamoDbPaymentAdapter();
 const notificationAdapter = new SqsNotificationAdapter();
@@ -15,14 +16,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
 		const traceId = await paymentService.startPayment(cardId, service);
 
-		return {
-			statusCode: 201,
-			body: JSON.stringify({ traceId })
-		};
+		return jsonResponse(201, { traceId });
 	} catch (error: any) {
-		return {
-			statusCode: 500,
-			body: JSON.stringify({ message: error.message })
-		};
+		return jsonResponse(500, { message: error.message });
 	}
 };
