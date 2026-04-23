@@ -2,6 +2,7 @@
 import { APIGatewayProxyResult } from "aws-lambda";
 import { RedisCatalogAdapter } from "@adapters/redis-catalog.adapter";
 import { CatalogService } from "@services/catalog.service";
+import { jsonResponse } from "../http/cors";
 	
 const redisAdapter = new RedisCatalogAdapter();
 const catalogService = new CatalogService(redisAdapter);
@@ -15,15 +16,9 @@ export const handler = async (event: any) => {
 		const services = await catalogService.listServices(); 
 		console.log("Servicios obtenidos con éxito");
 		
-		return {
-			statusCode: 200,
-			body: JSON.stringify(services),
-		};
+		return jsonResponse(200, services);
 	} catch (error) {
 		console.error("Error detallado:", error);
-		return {
-			statusCode: 500,
-			body: JSON.stringify({ message: "Error interno", detail: error.message }),
-		};
+		return jsonResponse(500, { message: "Error interno", detail: error.message });
 	}
 };
