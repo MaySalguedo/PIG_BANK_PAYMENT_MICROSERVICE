@@ -45,7 +45,13 @@ resource "aws_iam_policy" "lambda_dynamodb_policy" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action   = ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:UpdateItem", "dynamodb:Query"]
+      Action   = [
+        "dynamodb:PutItem",
+        "dynamodb:GetItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:Query",
+        "dynamodb:Scan"
+      ]
       Effect   = "Allow"
       Resource = "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/payment-table"
     }]

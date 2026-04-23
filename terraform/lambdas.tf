@@ -90,6 +90,19 @@ resource "aws_lambda_function" "get_transaction_status" {
   }
 }
 
+resource "aws_lambda_function" "get_all_transactions" {
+  function_name    = "get-all-transactions-lambda"
+  runtime          = "nodejs22.x"
+  handler          = "dist/get-all-transactions-lambda.handler"
+  role             = aws_iam_role.payment_lambda_role.arn
+  filename         = var.lambda_zip_path
+  source_code_hash = filebase64sha256(var.lambda_zip_path)
+
+  environment {
+    variables = local.payment_env
+  }
+}
+
 resource "aws_lambda_permission" "apigw_status" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"

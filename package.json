@@ -8,11 +8,11 @@
     "clean": "rm -rf dist",
     "bundle": "esbuild src/infra/handlers/*.ts --bundle --platform=node --target=node22 --format=cjs --outdir=dist --external:@aws-sdk/*",
     "build": "tar -a -c -f lambda.zip dist package.json",
-	"compile": "run-s clean bundle build",
-	"tf:init": "terraform init",
-	"tf:apply": "terraform apply -auto-approve -replace=\"aws_api_gateway_deployment.payment_deployment\"",
-	"deploy:init": "run-s compile tf:init tf:apply",
-	"deploy": "run-s compile tf:apply"
+    "compile": "run-s clean bundle build",
+    "tf:init": "terraform init",
+    "tf:apply": "terraform apply -auto-approve -replace=\"aws_api_gateway_deployment.payment_deployment\"",
+    "deploy:init": "run-s compile tf:init tf:apply",
+    "deploy": "run-s compile tf:apply"
   },
   "keywords": [],
   "author": "",
